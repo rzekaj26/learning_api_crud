@@ -1,12 +1,7 @@
 const express = require("express");
 const router = express.Router();
-
-let orders = [
-  { id: 1, name: "Test 1", price: 250.5 },
-  { id: 2, name: "Test 2", price: 124.3 },
-  { id: 3, name: "Test 3", price: 342.3 },
-  { id: 4, name: "Test 4", price: 8933 },
-];
+const orders = require("../../data/ordersData");
+const products = require("../../data/productsData");
 
 router.get("/", (req, res, next) => {
   let filteredOrders = orders;
@@ -20,7 +15,7 @@ router.get("/", (req, res, next) => {
       order.name.includes(filterByProductName)
     );
   }
-  // console.log(req.query);
+
   res.status(200).json({
     message: "Orders were fetched",
     orders,
@@ -31,19 +26,42 @@ router.get("/", (req, res, next) => {
 router.post("/", (req, res, next) => {
   const newOrder = req.body;
   console.log({ newOrder });
-  if (
-    typeof newOrder.id !== "number" ||
-    typeof newOrder.name !== "string" ||
-    typeof newOrder.price !== "number"
-  ) {
+  if (typeof newOrder.id !== "number" || !Array.isArray(newOrder.products)) {
     return res.status(404).json({
       message: "invalid order format, please try again",
     });
   }
+
+  let existingOrderId = orders.find((order) => order.id === newOrder.id);
+  if (existingOrderId) {
+    return res.status(404).json({
+      message:
+        "An order already exists with this ID, please select a different one",
+    });
+  }
+
+  const validProductIds = products.map((product) => product.id);
+
+  const allProductsValid = newOrder.products.every((productId) =>
+    validProductIds.includes(productId)
+  );
+  if (!allProductsValid) {
+    return res.status(404).json({
+      message: "not a valid product ",
+    });
+  }
+
+  let total_price = 0;
+  for (const productId of newOrder.products) {
+    const product = products.find((product) => product.id === productId);
+    total_price += product.price;
+  }
+
   const newOrderData = {
     id: newOrder.id,
-    name: newOrder.name,
-    price: newOrder.price,
+    products: newOrder.products,
+    total_price,
+    status: "pending",
   };
   orders.push(newOrderData);
   res.status(201).json({

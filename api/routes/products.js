@@ -1,12 +1,6 @@
 const express = require("express");
 const router = express.Router();
-
-let products = [
-  { id: 1, name: "Test 1", price: 250.5 },
-  { id: 2, name: "Test 2", price: 124.3 },
-  { id: 3, name: "Test 3", price: 342.3 },
-  { id: 4, name: "Test 4", price: 8933 },
-];
+const products = require("../../data/productsData");
 
 router.get("/", (req, res) => {
   res.status(200).json({
@@ -42,6 +36,15 @@ router.post("/", (req, res, next) => {
       message: "Wrong data structure, not accepted",
     });
   }
+
+  let existingId = products.find((product) => product.id === newProduct.id);
+  if (existingId) {
+    return res.status(404).json({
+      message:
+        "A product already exists with this ID, please select a different one",
+    });
+  }
+
   const newProductData = {
     id: newProduct.id,
     name: newProduct.name,
@@ -76,7 +79,6 @@ router.put("/:id", (req, res) => {
     });
   }
   const newUpdatedProduct = {
-    id: updatedProduct.id,
     name: updatedProduct.name,
     price: updatedProduct.price,
   };
